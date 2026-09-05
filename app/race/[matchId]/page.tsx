@@ -218,9 +218,9 @@ export default function RacePage({
         updateCarPhysics(bot, botInput, track, dt);
       });
 
-      // Update Live HUD data
+      // Update Live HUD data at optimized 15 Hz (prevents React VDOM diffing from blocking 120 FPS WebGL loop)
       hudUpdateCounter++;
-      if (hudUpdateCounter % 3 === 0) {
+      if (hudUpdateCounter % 8 === 0) {
         // Speed in KM/H (approx 1 physics pixel/sec = ~0.95 km/h, up to 450 km/h with 2x Nitro!)
         const kmh = Math.round(Math.abs(playerCar.velocity) * 0.95);
         setSpeedKmh(kmh);

@@ -10,15 +10,16 @@ export class GameLoop {
   private animFrameId: number | null = null;
   private lastTime = 0;
   private accumulator = 0;
-  private readonly fixedStep = 1 / 60; // 60 Hz simulation tick (16.66ms)
+  // 120 Hz High-Frequency Simulation Tick (8.33ms) for ultra-smooth 120 FPS performance
+  private readonly fixedStep = 1 / 120;
 
   // Performance telemetry
   private frameTimes: number[] = [];
   private fpsSampleCounter = 0;
   private lastFpsUpdate = 0;
-  private currentFps = 60;
-  private p50 = 11.1;
-  private p95 = 11.1;
+  private currentFps = 120;
+  private p50 = 8.33;
+  private p95 = 8.33;
   private droppedFrames = 0;
 
   constructor(
@@ -52,36 +53,36 @@ export class GameLoop {
     let frameDelta = (currentTime - this.lastTime) / 1000;
     this.lastTime = currentTime;
 
-    // Prevent spiral of death on tab unfocus/heavy hitch
-    if (frameDelta > 0.15) {
-      frameDelta = 0.15;
+    // Guard against large delta spikes (e.g. background tab)
+    if (frameDelta > 0.1) {
+      frameDelta = 0.1;
       this.droppedFrames++;
     }
 
     this.accumulator += frameDelta;
 
-    // Run physics simulation ticks at fixed 60 Hz
+    // Run physics simulation ticks at high-precision 120 Hz
     let ticks = 0;
-    while (this.accumulator >= this.fixedStep && ticks < 5) {
+    while (this.accumulator >= this.fixedStep && ticks < 6) {
       this.updateFn(this.fixedStep);
       this.accumulator -= this.fixedStep;
       ticks++;
     }
 
-    // Alpha interpolation fraction for butter-smooth 90+ FPS rendering
+    // Alpha interpolation fraction for buttery 120-144+ FPS rendering
     const alpha = Math.min(1, Math.max(0, this.accumulator / this.fixedStep));
     this.renderFn(alpha);
 
     // Measure frame time
     const frameElapsed = performance.now() - frameStart;
     this.frameTimes.push(frameElapsed);
-    if (this.frameTimes.length > 120) {
+    if (this.frameTimes.length > 240) {
       this.frameTimes.shift();
     }
 
-    // Compute FPS & p95 every 500ms
+    // Compute FPS & p95 every 400ms
     this.fpsSampleCounter++;
-    if (currentTime - this.lastFpsUpdate >= 500) {
+    if (currentTime - this.lastFpsUpdate >= 400) {
       this.currentFps = Math.round((this.fpsSampleCounter * 1000) / (currentTime - this.lastFpsUpdate));
       this.fpsSampleCounter = 0;
       this.lastFpsUpdate = currentTime;
